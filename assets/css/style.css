@@ -514,7 +514,7 @@ body {
 }
 
 .msg-input {
-  flex: 1;
+  width: calc(100% - 54px);
   background: var(--md-surface-2);
   border: 1.5px solid var(--md-outline);
   border-radius: var(--radius-md);
