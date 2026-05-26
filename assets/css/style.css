@@ -79,7 +79,6 @@ body {
   position: relative;
 }
 
-/* 노치 */
 .phone-frame::before {
   content: '';
   position: absolute;
@@ -104,7 +103,6 @@ body {
   }
 }
 
-/* 상태바 */
 .phone-status {
   display: flex;
   align-items: center;
@@ -130,7 +128,6 @@ body {
   color: var(--md-on-surface);
 }
 
-/* 폰 바디 */
 .phone-body {
   flex: 1;
   display: flex;
@@ -247,7 +244,6 @@ body {
   opacity: 0.7;
 }
 
-/* 홈 바 */
 .phone-home-bar {
   height: 32px;
   display: flex;
@@ -312,13 +308,42 @@ body {
   color: var(--md-on-surface);
 }
 
-.online-badge {
+/* ── 접속자 드롭다운 ── */
+.online-wrap {
+  position: relative;
+  margin-top: 2px;
+}
+
+.online-toggle {
   display: flex;
   align-items: center;
   gap: 5px;
   font-size: 12px;
+  font-family: var(--font);
   color: var(--md-on-surface-var);
-  margin-top: 2px;
+  background: var(--md-surface-variant);
+  border: 1px solid var(--md-outline);
+  border-radius: 20px;
+  padding: 3px 8px 3px 10px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.online-toggle:hover {
+  background: #dde4f5;
+  border-color: var(--md-primary);
+}
+.online-toggle[aria-expanded='true'] {
+  border-color: var(--md-primary);
+}
+
+.toggle-arrow {
+  font-size: 16px !important;
+  transition: transform 0.2s;
+}
+.online-toggle[aria-expanded='true'] .toggle-arrow {
+  transform: rotate(180deg);
 }
 
 .dot {
@@ -327,6 +352,7 @@ body {
   border-radius: 50%;
   background: #2e7d32;
   animation: pulse 2s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes pulse {
@@ -339,6 +365,84 @@ body {
   }
 }
 
+.online-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 200px;
+  background: var(--md-surface);
+  border: 1px solid var(--md-outline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  display: none;
+  animation: dropIn 0.18s ease;
+}
+.online-dropdown.open {
+  display: block;
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-on-surface-var);
+  padding: 10px 14px 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--md-outline);
+}
+
+.user-list {
+  list-style: none;
+  padding: 6px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.user-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--md-on-surface);
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.user-list li.is-me .user-avatar {
+  background: #2e7d32;
+}
+.user-list li.is-me .user-name::after {
+  content: ' (나)';
+  color: var(--md-on-surface-var);
+  font-size: 11px;
+}
+
+/* ── 나가기 버튼 ── */
 .leave-btn {
   background: transparent;
   border: 1.5px solid var(--md-outline);
@@ -566,7 +670,7 @@ body {
   box-shadow: none;
 }
 
-/* 반응형 */
+/* ── 반응형 ── */
 @media (max-width: 576px) {
   .phone-frame {
     width: 100%;

@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
-import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyC9NZNptW81r9FAl20niuxxSHqmkAtqg8s',
@@ -18,10 +18,10 @@ const db = getFirestore(app)
 const auth = getAuth(app)
 
 // ── 상태 ──
-let currentUser = null // { uid, nickname }
-let unsubMessages = null // 메시지 리스너 해제 함수
-let unsubOnline = null // 접속자 리스너 해제 함수
-let lastDate = null // 날짜 구분선용
+let currentUser = null
+let unsubMessages = null
+let unsubOnline = null
+let lastDate = null
 
 // ── DOM ──
 const loginScreen = document.getElementById('login-screen')
@@ -33,6 +33,9 @@ const messagesEl = document.getElementById('messages')
 const msgInput = document.getElementById('msg-input')
 const sendBtn = document.getElementById('send-btn')
 const onlineCount = document.getElementById('online-count')
+const onlineToggle = document.getElementById('online-toggle')
+const onlineDropdown = document.getElementById('online-dropdown')
+const userList = document.getElementById('user-list')
 
 // ── 유틸 ──
 function formatTime(ts) {
@@ -77,18 +80,15 @@ async function handleLogin() {
   loginBtn.textContent = '입장 중...'
 
   try {
-    // 익명 로그인 (Firebase Auth)
     const credential = await signInAnonymously(auth)
     const uid = credential.user.uid
     currentUser = { uid, nickname }
 
-    // 접속자 등록 (연결 끊기면 자동 삭제는 Realtime DB에서만 가능 → 여기선 수동 삭제)
     await setDoc(doc(db, 'online', uid), {
       nickname,
       joinedAt: serverTimestamp(),
     })
 
-    // 입장 메시지
     await addDoc(collection(db, 'messages'), {
       type: 'system',
       text: `${nickname}님이 입장했습니다.`,
@@ -112,36 +112,98 @@ function enterChat() {
 
   subscribeMessages()
   subscribeOnline()
+  subscribeKicked()
+}
+
+// ── 강퇴 감지 ──
+// Firebase 콘솔에서 kicked/{uid} 문서를 추가하면 해당 유저가 튕겨남
+function subscribeKicked() {
+  const kickedRef = doc(db, 'kicked', currentUser.uid)
+  onSnapshot(kickedRef, async (snapshot) => {
+    if (!snapshot.exists()) return
+
+    // 강퇴 문서가 생성됐을 때
+    alert('관리자에 의해 강퇴되었습니다.')
+
+    // 리스너 해제
+    unsubMessages?.()
+    unsubOnline?.()
+
+    // 강퇴 메시지
+    await addDoc(collection(db, 'messages'), {
+      type: 'system',
+      text: `${currentUser.nickname}님이 강퇴되었습니다.`,
+      createdAt: serverTimestamp(),
+    })
+
+    // 접속자 목록 제거
+    await deleteDoc(doc(db, 'online', currentUser.uid))
+
+    currentUser = null
+
+    // 로그인 화면으로
+    chatScreen.classList.add('hidden')
+    loginScreen.classList.remove('hidden')
+    nicknameInput.value = ''
+  })
 }
 
 // ── 메시지 실시간 수신 ──
 function subscribeMessages() {
-  const q = query(
-    collection(db, 'messages'),
-    orderBy('createdAt'),
-    limit(100), // 최근 100개만
-  )
+  const q = query(collection(db, 'messages'), orderBy('createdAt'), limit(100))
 
   unsubMessages = onSnapshot(q, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
-        renderMessage(change.doc.data())
-      }
+      if (change.type === 'added') renderMessage(change.doc.data())
     })
     scrollToBottom()
   })
 }
 
-// ── 접속자 수 실시간 수신 ──
+// ── 접속자 실시간 수신 + 드롭다운 목록 ──
 function subscribeOnline() {
   unsubOnline = onSnapshot(collection(db, 'online'), (snapshot) => {
     onlineCount.textContent = snapshot.size
+
+    userList.innerHTML = ''
+    snapshot.forEach((d) => {
+      const data = d.data()
+      const isMe = d.id === currentUser?.uid
+
+      const li = document.createElement('li')
+      if (isMe) li.classList.add('is-me')
+
+      const avatar = document.createElement('div')
+      avatar.className = 'user-avatar'
+      avatar.textContent = data.nickname.charAt(0).toUpperCase()
+
+      const name = document.createElement('span')
+      name.className = 'user-name'
+      name.textContent = data.nickname
+
+      li.appendChild(avatar)
+      li.appendChild(name)
+      userList.appendChild(li)
+    })
   })
 }
 
+// ── 드롭다운 토글 ──
+onlineToggle.addEventListener('click', () => {
+  const isOpen = onlineDropdown.classList.toggle('open')
+  onlineToggle.setAttribute('aria-expanded', isOpen)
+})
+
+// 외부 클릭 시 닫기
+document.addEventListener('click', (e) => {
+  if (!onlineToggle.contains(e.target) && !onlineDropdown.contains(e.target)) {
+    onlineDropdown.classList.remove('open')
+    onlineToggle.setAttribute('aria-expanded', false)
+  }
+})
+
 // ── 메시지 렌더링 ──
 function renderMessage(data) {
-  // 날짜 구분선
   if (data.createdAt && !isSameDay(data.createdAt, lastDate)) {
     const divider = document.createElement('div')
     divider.className = 'date-divider'
@@ -150,7 +212,6 @@ function renderMessage(data) {
     lastDate = data.createdAt
   }
 
-  // 시스템 메시지 (입장/퇴장)
   if (data.type === 'system') {
     const el = document.createElement('div')
     el.className = 'system-msg'
@@ -161,20 +222,17 @@ function renderMessage(data) {
 
   const isMe = data.uid === currentUser?.uid
 
-  // 연속 메시지 묶기: 이전 그룹과 같은 sender면 버블만 추가
   const lastGroup = messagesEl.querySelector('.msg-group:last-child')
   if (lastGroup && lastGroup.dataset.uid === data.uid && lastGroup.dataset.time === formatTime(data.createdAt)) {
     const bubble = document.createElement('div')
     bubble.className = 'bubble'
     bubble.textContent = data.text
-    // 기존 row에서 시간 앞에 추가
     const row = lastGroup.querySelector('.msg-row')
     const timEl = row.querySelector('.msg-time')
     row.insertBefore(bubble, timEl)
     return
   }
 
-  // 새 그룹 생성
   const group = document.createElement('div')
   group.className = `msg-group ${isMe ? 'me' : 'other'}`
   group.dataset.uid = data.uid
@@ -230,7 +288,7 @@ async function sendMessage() {
     })
   } catch (err) {
     console.error('전송 실패:', err)
-    msgInput.value = text // 실패 시 복원
+    msgInput.value = text
   }
 }
 
@@ -246,18 +304,15 @@ async function leaveChat() {
 async function cleanUp() {
   if (!currentUser) return
 
-  // 리스너 해제
   unsubMessages?.()
   unsubOnline?.()
 
-  // 퇴장 메시지
   await addDoc(collection(db, 'messages'), {
     type: 'system',
     text: `${currentUser.nickname}님이 퇴장했습니다.`,
     createdAt: serverTimestamp(),
   })
 
-  // 접속자 목록에서 제거
   await deleteDoc(doc(db, 'online', currentUser.uid))
 
   currentUser = null
