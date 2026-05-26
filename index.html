@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>실시간 채팅</title>
+    <link rel="stylesheet" href="./assets/css/font.css" />
+    <link rel="stylesheet" href="./assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+  </head>
+  <body>
+    <!-- 로그인 화면 -->
+    <div class="screen" id="login-screen">
+      <!-- 모바일 프레임 -->
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span class="status-time" id="status-time">9:41</span>
+          <div class="status-icons">
+            <span class="material-symbols-rounded" style="font-size: 14px">signal_cellular_alt</span>
+            <span class="material-symbols-rounded" style="font-size: 14px">wifi</span>
+            <span class="material-symbols-rounded" style="font-size: 14px">battery_5_bar</span>
+          </div>
+        </div>
+
+        <div class="phone-body">
+          <div class="app-icon">
+            <span class="material-symbols-rounded">chat_bubble</span>
+          </div>
+          <h1 class="login-title">마빈 챗</h1>
+          <p class="login-sub">firebase기반 채팅 구현</p>
+
+          <div class="input-group">
+            <span class="material-symbols-rounded input-icon">person</span>
+            <input type="text" id="nickname-input" class="login-input" placeholder="닉네임 입력" maxlength="12" />
+          </div>
+
+          <button class="login-btn" id="login-btn">
+            시작하기
+            <span class="material-symbols-rounded">arrow_forward</span>
+          </button>
+
+          <p class="login-notice">
+            <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: -2px">lock</span>
+            익명으로 안전하게 참여됩니다
+          </p>
+        </div>
+
+        <div class="phone-home-bar"></div>
+      </div>
+    </div>
+
+    <!-- 채팅 화면 -->
+    <div class="screen hidden" id="chat-screen">
+      <div class="chat-wrap">
+        <header class="chat-header">
+          <div class="header-left">
+            <div class="header-icon">
+              <span class="material-symbols-rounded">chat_bubble</span>
+            </div>
+            <div>
+              <div class="header-title">실시간 채팅</div>
+              <div class="online-badge">
+                <span class="dot"></span>
+                <span id="online-count">0</span>
+                명 접속 중
+              </div>
+            </div>
+          </div>
+          <button class="leave-btn" id="leave-btn">
+            <span class="material-symbols-rounded">logout</span>
+            나가기
+          </button>
+        </header>
+
+        <div class="messages" id="messages">
+          <div class="welcome-msg" id="welcome-msg">
+            <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: -3px">waving_hand</span>
+            채팅에 오신 것을 환영합니다
+          </div>
+        </div>
+
+        <div class="input-area">
+          <input type="text" id="msg-input" class="msg-input" placeholder="메시지를 입력하세요..." maxlength="200" autocomplete="off" />
+          <button class="send-btn" id="send-btn">
+            <span class="material-symbols-rounded">send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./assets/js/app.js"></script>
+    <script>
+      // 상태바 시간 표시
+      function updateTime() {
+        const now = new Date()
+        const h = now.getHours().toString().padStart(2, '0')
+        const m = now.getMinutes().toString().padStart(2, '0')
+        const el = document.getElementById('status-time')
+        if (el) el.textContent = `${h}:${m}`
+      }
+      updateTime()
+      setInterval(updateTime, 10000)
+    </script>
+  </body>
+</html>
